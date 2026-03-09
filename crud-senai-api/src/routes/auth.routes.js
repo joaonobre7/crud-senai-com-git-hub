@@ -7,6 +7,7 @@ import { loginSchema } from "../validators/auth.validators.js";
 // Importa a função de serviço que executa a lógica de login com proteção de 
 import { loginWithLock } from "../services/auth.service.js"; 
 // Cria uma nova instância de router para definir as rotas de autenticação 
+import { requireAuth } from "../middlewares/auth.middleware.js";
 const router = Router(); 
 // Configura um middleware limitador de taxa (rate limiter) para proteger contra força bruta 
 const loginLimiter = rateLimit({ 
@@ -50,4 +51,11 @@ next(err);
 }); 
 // Exporta o router como padrão (default export) para ser usado em outros arquivos 
 // OBRIGATÓRIO para que as rotas sejam acessíveis fora deste módulo 
+router.get("/me", requireAuth, (req, res) => {
+    return res.json({
+        ok: true,
+        auth: req.auth
+    });
+});
+
 export default router;
