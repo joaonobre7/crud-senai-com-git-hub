@@ -13,18 +13,14 @@ import { $, setText, showAlert, hideAlert, validateEmail } from "./utils.js";
  * Simula uma busca em banco de dados
  * @returns {Array} Lista de usuários ou array vazio se não existir
  */
-function loadUsers() {
-  return JSON.parse(localStorage.getItem("demoUsers") || "[]");
-}
+
 
 /**
  * Salva a lista de usuários no localStorage
  * Simula uma gravação em banco de dados
  * @param {Array} users - Lista de usuários a ser salva
  */
-function saveUsers(users) {
-  localStorage.setItem("demoUsers", JSON.stringify(users));
-}
+
 // ============================================================
 // FUNÇÕES DE RENDERIZAÇÃO (UI)
 // Responsáveis por atualizar a tabela de usuários na página
@@ -156,7 +152,7 @@ export function initUsersPage() {
     hideAlert(alertEl);  // Limpa alertas anteriores
 
     // Captura os valores do formulário
-    const id = $("#userId").value || crypto.randomUUID();  // Gera ID se novo usuário
+    const id = $("#userId").value;
     const name = $("#name").value.trim();
     const email = $("#email").value.trim().toLowerCase();
     const profile = $("#profile").value;  // ADMIN ou USER
