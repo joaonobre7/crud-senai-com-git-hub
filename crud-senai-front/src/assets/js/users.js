@@ -3,6 +3,16 @@ import { apiRequest } from "./api.js";
 // Importa funções utilitárias (DOM, alertas, validação)
 import { $, setText, showAlert, hideAlert, validateEmail } from "./utils.js";
 
+function getLoggedUser() { 
+const raw = localStorage.getItem("user"); 
+return raw ? JSON.parse(raw) : null; 
+}
+
+async function loadUsersFromApi(alertEl) { 
+const list = await apiRequest("/api/users"); 
+usersCache = list; 
+render(usersCache); 
+}
 // ============================================================
 // FUNÇÕES DE ARMAZENAMENTO (Simulação - banco local)
 // Quando o backend estiver pronto, estas funções não serão mais necessárias
@@ -38,23 +48,26 @@ function render(users) {
 
   // Itera sobre cada usuário da lista
   users.forEach((u) => {
-    const tr = document.createElement("tr");  // Cria uma nova linha de tabela
-
-    // Cria um badge (rótulo) com o status (ATIVO ou INATIVO)
-    const statusBadge = document.createElement("span");
-    statusBadge.className = `badge ${u.active ? "active" : "inactive"}`;
-    statusBadge.textContent = u.active ? "ATIVO" : "INATIVO";
+   const loggedUser = getLoggedUser(); 
+    if (loggedUser && loggedUser.profile === "ADMIN") { 
+    const btnEdit = document.createElement("button"); 
+    btnEdit.className = "btn-ghost"; 
+    btnEdit.type = "button"; 
+    btnEdit.textContent = "Editar"; 
+    btnEdit.addEventListener("click", () => fillForm(u)); 
+    const btnToggle = document.createElement("button"); 
+    btnToggle.className = "btn-danger"; 
+    btnToggle.type = "button"; 
+    btnToggle.textContent = u.status === "ACTIVE" ? "Inativar" : "Ativar"; 
+    btnToggle.addEventListener("click", () => toggleStatus(u.id, u.status, 
+    $("#alertUsers"))); 
+    tdActions.appendChild(btnEdit); 
+    tdActions.appendChild(btnToggle); 
+  }
 
     // Monta a estrutura HTML da linha com botões de ação
-    tr.innerHTML = `
-      <td></td>
-      <td></td>
-      <td></td>
-      <td>
-        <button class="btn-ghost" data-action="edit">Editar</button>
-        <button class="btn-danger" data-action="toggle">${u.active ? "Inativar" : "Ativar"}</button>
-      </td>
-    `;
+   const td = document.createElement("td"); 
+    td.textContent = u.name;
 
     // PROTEÇÃO CONTRA XSS: Usamos textContent ao invés de innerHTML para textos
     // Isso previne que dados maliciosos (script) sejam executados
@@ -113,11 +126,9 @@ function clearForm() {
  * @param {string} id - ID do usuário
  */
 function toggleStatus(id) {
-  const users = loadUsers();  // Carrega lista completa
   const idx = users.findIndex((u) => u.id === id);  // Encontra o usuário
   if (idx === -1) return;  // Se não encontrar, retorna
   users[idx].active = !users[idx].active;  // Inverte o status
-  saveUsers(users);  // Salva a mudança
   render(users);  // Atualiza a exibição
 }
 
@@ -172,10 +183,23 @@ export function initUsersPage() {
       // - UPDATE: PUT /api/users/:id
       // Obs: a senha será criptografada no backend (bcrypt), não aqui.
       //
-      // await apiRequest("/api/users", { 
-      //   method: "POST", 
-      //   body: { name, email, profile, active, password } 
-      // });
+      await apiRequest("/api/users", { 
+      method: "POST", 
+      body: { name, email, profile, active, password } 
+      });
+
+      await apiRequest(`/api/users/${id}/status`, { 
+      method: "PATCH", 
+      body: { status: "INACTIVE" } 
+      });
+
+      if (err.status === 401 || err.status === 403) { 
+      setToken(null); 
+      window.location.href = "./login.html"; 
+      } 
+      if (err.status === 409) { 
+      showAlert(alertEl, "err", "Já existe usuário com este e-mail."); 
+      }
 
       // ===== SIMULAÇÃO LOCAL (Para fins educacionais) =====
       const list = loadUsers();
